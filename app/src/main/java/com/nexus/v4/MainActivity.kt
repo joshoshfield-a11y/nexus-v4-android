@@ -13,11 +13,20 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.webkit.WebViewAssetLoader
+import androidx.webkit.WebViewClientCompat
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var web: WebView
     private var pendingPermissionRequest: PermissionRequest? = null
+
+    // assets/www served over https://appassets.androidplatform.net — a secure
+    // context, so ES module scripts, fetch and getUserMedia all work (file://
+    // blocks module scripts via CORS and was the white-screen root cause).
+    private val assetLoader = WebViewAssetLoader.Builder()
+        .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+        .build()
 
     // Runtime mic permission -> then answer the WebView's PermissionRequest
     private val micPermission =
@@ -47,11 +56,9 @@ class MainActivity : ComponentActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true          // localStorage graph persistence
             mediaPlaybackRequiresUserGesture = false
-            allowFileAccess = true
-            allowContentAccess = true
         }
 
-        web.webViewClient = object : WebViewClient() {
+        web.webViewClient = object : WebViewClientCompat() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean = false
         }
 
@@ -66,7 +73,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        web.loadUrl("file:///android_asset/www/index.html")
+        web.loadUrl("https://appassets.androidplatform.net/assets/www/index.html")
     }
 
     override fun onDestroy() {
