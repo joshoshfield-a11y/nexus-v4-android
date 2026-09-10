@@ -27,3 +27,8 @@ which un-breaks ES module loading (file:// CORS block) and getUserMedia.
 ERR_CACHE_MISS on appassets URL fixed: WebViewClientCompat now overrides shouldInterceptRequest
 and delegates to WebViewAssetLoader. v4.0.1 had built the loader but never wired the interceptor,
 so the https://appassets... URL escaped to the real network.
+
+## 4.0.3 fix (2026-09-10)
+File upload fixed: WebChromeClient.onShowFileChooser now launches the system OpenDocument
+picker (audio/* per the input's accept attribute) and pipes the content:// URI back to the
+WebView. Without this override the <input type="file"> button is dead in a WebView.

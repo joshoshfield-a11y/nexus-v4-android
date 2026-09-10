@@ -1,9 +1,11 @@
 package com.nexus.v4
 
 import android.Manifest
+import android.net.Uri
 import android.os.Bundle
 import android.view.WindowManager
 import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -20,6 +22,7 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var web: WebView
     private var pendingPermissionRequest: PermissionRequest? = null
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
     // assets/www served over https://appassets.androidplatform.net — a secure
     // context, so ES module scripts, fetch and getUserMedia all work (file://
@@ -36,6 +39,14 @@ class MainActivity : ComponentActivity() {
                 else req.deny()
                 pendingPermissionRequest = null
             }
+        }
+
+    // <input type="file"> bridge: system document picker -> back to the WebView.
+    // Without this, the upload button in the web app is dead (default WebView behavior).
+    private val filePicker =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            filePathCallback?.onReceiveValue(if (uri != null) arrayOf(uri) else null)
+            filePathCallback = null
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,6 +67,7 @@ class MainActivity : ComponentActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true          // localStorage graph persistence
             mediaPlaybackRequiresUserGesture = false
+            allowContentAccess = true         // content:// URIs from the file picker
         }
 
         web.webViewClient = object : WebViewClientCompat() {
@@ -76,12 +88,25 @@ class MainActivity : ComponentActivity() {
                     request.deny()
                 }
             }
+
+            override fun onShowFileChooser(
+                webView: WebView,
+                callback: ValueCallback<Array<Uri>>,
+                params: FileChooserParams
+            ): Boolean {
+                filePathCallback?.onReceiveValue(null)   // cancel any dangling request
+                filePathCallback = callback
+                val accepts = params.acceptTypes.filter { it.isNotEmpty() }.toTypedArray()
+                filePicker.launch(if (accepts.isNotEmpty()) accepts else arrayOf("*/*"))
+                return true
+            }
         }
 
         web.loadUrl("https://appassets.androidplatform.net/assets/www/index.html")
     }
 
     override fun onDestroy() {
+        filePathCallback?.onReceiveValue(null)
         web.destroy()
         super.onDestroy()
     }
