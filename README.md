@@ -22,3 +22,8 @@ npm install && npm run build, then copy dist/* into app/src/main/assets/www/.
 White-screen on launch fixed: Vite `base: './'` (relative asset URLs) + assets served via
 `WebViewAssetLoader` at `https://appassets.androidplatform.net/assets/www/` — a secure context,
 which un-breaks ES module loading (file:// CORS block) and getUserMedia.
+
+## 4.0.2 fix (2026-09-10)
+ERR_CACHE_MISS on appassets URL fixed: WebViewClientCompat now overrides shouldInterceptRequest
+and delegates to WebViewAssetLoader. v4.0.1 had built the loader but never wired the interceptor,
+so the https://appassets... URL escaped to the real network.

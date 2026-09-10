@@ -1,13 +1,13 @@
 package com.nexus.v4
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.WindowManager
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
@@ -60,6 +60,11 @@ class MainActivity : ComponentActivity() {
 
         web.webViewClient = object : WebViewClientCompat() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean = false
+            // THE v4.0.1 BUG: without this override the appassets URL hits the
+            // real network -> net::ERR_CACHE_MISS. Intercept and serve locally.
+            override fun shouldInterceptRequest(
+                view: WebView, request: WebResourceRequest
+            ): WebResourceResponse? = assetLoader.shouldInterceptRequest(request.url)
         }
 
         web.webChromeClient = object : WebChromeClient() {
